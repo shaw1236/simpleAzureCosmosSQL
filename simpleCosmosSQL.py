@@ -64,15 +64,13 @@ class CosmosSQL:
         return self.__container_id 
 
     # Create a container    
-    def createContainer(self, container_id, container_path): 
+    def createContainer(self, container_id, container_path = '/id'): 
         self.__container_id = container_id   
-        container_definition = {'id': container_id,
-                                'partitionKey':
-                                            {
-                                                'paths': [container_path],
-                                                'kind': documents.PartitionKind.Hash
-                                            }
-                                }
+        container_definition = {'id': container_id}
+        container_definition['partitionKey'] = {
+                                                    'paths': [container_path],
+                                                    'kind': documents.PartitionKind.Hash
+                                               }                                
         try:
             self.__container = self.client.CreateContainer("dbs/" + self.database['id'], container_definition, {'offerThroughput': 400})
         except errors.HTTPFailure as e:
@@ -109,19 +107,37 @@ class CosmosSQL:
         return self.client.ReadContainer("dbs/" + self.database_id + "/colls/" + container_id)
 
     # Collection operations
-    def upsertItem(self, fields):
-        self.client.UpsertItem("dbs/" + self.database_id + "/colls/" + self.container_id, fields)
+    def upsertItem(self, document):
+        return self.client.UpsertItem("dbs/" + self.database_id + "/colls/" + self.container_id, document)
+
+    def patchItem(self, id, partialDoc):
+        if 'id' in partialDoc: 
+            del partialDoc['id']
+        sql = 'SELECT * FROM ' + self.container_id + " t WHERE t.id = '{0}'".format(id)
+        for item in self.queryItems(sql):
+            document = {}
+            for key in item.keys():
+                if key[0] != '_':
+                    document[key] = item[key]
+            document.update(partialDoc) 
+            return self.upsertItem(document)
 
     def queryItems(self, sql):
         return self.client.QueryItems("dbs/" + self.database_id + "/colls/" + self.container_id, sql, {'enableCrossPartitionQuery': True})
 
-    def deleteItem(self, itemId):
-        self.client.DeleteItem("dbs/" + self.database_id + "/colls/" + self.container_id + "/docs/" + itemId, {'partitionKey': 'Pager'})
+    def deleteItem(self, itemId, partitionKey = None):
+        if not partitionKey:
+            partitionKey = itemId
+        options = {'enableCrossPartitionQuery': True}
+        options['maxItemCount'] = 5
+        options['partitionKey'] = partitionKey
+        return self.client.DeleteItem("dbs/" + self.database_id + "/colls/" + self.container_id + "/docs/" + itemId , options)
 
 if __name__ == '__main__':
     cosmos = CosmosSQL()
 
     cosmos.createContainer(container_id = 'products', container_path = '/productName')
+    
     cosmos.replaceThroughputOfContainer(1000) 
 
     # Insert data
