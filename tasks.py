@@ -7,7 +7,7 @@
 from simpleCosmosSQL import CosmosSQL
 
 import json
-    
+
 def initialization(cosmos):
     # Test Dataset
     tasks = [
@@ -62,7 +62,7 @@ def read(cosmos, id):
     return tasks
 
 cosmos = CosmosSQL()
-cosmos.createContainer(container_id = 'tasks', container_path = '/id')    
+cosmos.recreateContainer(container_id = 'tasks', container_path = '/id')    
 
 print("\n==============================================")
 print("**Test Insert")

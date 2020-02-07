@@ -12,3 +12,9 @@ $vi config.py
 
 $python simpleCosmosSQL.py
 
+$python family.py
+
+$python tasks.py
+
+#python testdb
+
