@@ -10,11 +10,11 @@ $vi config.py
 
 # Run
 
-$python simpleCosmosSQL.py
+$python CosmosSQLService.py
 
-$python family.py
+$python testFamily.py
 
-$python tasks.py
+$python testTasks.py
 
-#python testdb
+#python testdb.py
 

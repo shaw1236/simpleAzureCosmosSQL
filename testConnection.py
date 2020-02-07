@@ -4,11 +4,9 @@
 ##
 ## Author : Simon Li  Feb 2020
 ##
-from simpleCosmosSQL import CosmosSQL
-    
-cosmos = CosmosSQL()
-cosmos.createContainer(container_id = 'tasks', container_path = '/id')    
+from CosmosSQLService import CosmosSQLClient
 
-sql = 'SELECT t.id, t.title, t.description, t.done FROM {0} as t'.format(cosmos.container_id) 
-for task in cosmos.queryItems(sql):
-    print(task)
+# Create a client    
+cosmosClient = CosmosSQLClient()
+# List all the databases under our account
+cosmosClient.listDatabases()

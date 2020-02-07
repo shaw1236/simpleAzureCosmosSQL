@@ -4,7 +4,7 @@
 ##
 ## Author : Simon Li  Feb 2020
 ##
-from simpleCosmosSQL import CosmosSQL
+from CosmosSQLService import CosmosSQL
 
 import json
 

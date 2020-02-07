@@ -107,7 +107,7 @@ class family:
         }
         return johnson_item
 
-from simpleCosmosSQL import CosmosSQL
+from CosmosSQLService import CosmosSQL
 
 cosmos = CosmosSQL()
 
