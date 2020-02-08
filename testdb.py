@@ -4,7 +4,7 @@
 ##
 ## Author : Simon Li  Feb 2020
 ##
-from simpleCosmosSQL import CosmosSQLClient
+from CosmosSQLService import CosmosSQLClient
 
 client = CosmosSQLClient()
 database_id = 'testDatabase'

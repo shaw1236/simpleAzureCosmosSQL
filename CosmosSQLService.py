@@ -8,7 +8,7 @@
 ## ref: https://pypi.org/project/azure-cosmos/
 ## Usage:
 ## 1. Import our library
-##    from simpleCosmosSQL import CosmosSQL
+##    from CosmosSQLService import CosmosSQL
 ##
 ## 2. Create an instance with a database, which will be created if not existing
 ##    cosmos = CosmosSQL('myDatabase')      
