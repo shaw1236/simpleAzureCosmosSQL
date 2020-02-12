@@ -29,6 +29,18 @@ import config as cfg
 #https://docs.microsoft.com/en-us/python/api/azure-cosmos/azure.cosmos.cosmos_client.cosmosclient?view=azure-python
 # Class CosmosSQLClient is served for client and database
 class CosmosSQLClient: 
+    """Azure Cosmos SQL Client.
+    Attributes:
+        __client - A cosmos connection client
+        errors   - cosmos client error
+        json     - json library
+        uuid     - uuid library
+    Methods:
+        createDatabaseIfNotExists(database_id) 
+        findDatabase(database_id)
+        readDatabase(database_id)
+        listDatabases()
+    """
     def __init__(self):
         self.__client = cosmos_client.CosmosClient(cfg.settings['URI'], {'masterKey': cfg.settings['PRIMARY_KEY']})
 
@@ -46,7 +58,8 @@ class CosmosSQLClient:
     def client(self):
         return self.__client 
 
-    def createDatabaseIfNotExists(self, database_id): 
+    def createDatabaseIfNotExists(self, database_id):
+        """Create a database if it does not exist""" 
         # Create a database
         try:
             database = self.client.CreateDatabase({'id': database_id})
@@ -55,6 +68,7 @@ class CosmosSQLClient:
         return database
 
     def findDatabase(self, id):
+        """Query a database"""
         print('Query for Database')
         databases = list(self.client.QueryDatabases({
             "query": "SELECT * FROM r WHERE r.id=@id",
@@ -68,6 +82,7 @@ class CosmosSQLClient:
             print('No database with id \'{0}\' was found'. format(id))
 
     def readDatabase(self, id):
+        """Read a database"""
         print("\nGet a Database by id")
         try:
             # All Azure Cosmos resources are addressable via a link
@@ -86,6 +101,7 @@ class CosmosSQLClient:
                 raise
 
     def listDatabases(self):
+        """List all the cosmos databases under the current account"""
         print("\nList all Databases on an account")
         print('Databases:')
         for database in list(self.client.ReadDatabases()):
@@ -94,19 +110,47 @@ class CosmosSQLClient:
     #Expose the libraries
     @staticmethod
     def errors():
+        """azure.cosmos.errors"""
         return errors
 
     @staticmethod
     def json():
+        """josn module"""
         return json
 
     @staticmethod
     def uuid():
+        """uuid module"""
         return uuid
 
 ###################################################################################        
 # Class CosmosSQL main service
 class CosmosSQL(CosmosSQLClient): 
+    """Azure Cosmos SQL Service
+    Parent class: CosmosSQLClient
+
+    Attributes:
+        __database     - A cosmos database object
+        __database_id  - A cosmos database id
+        __container    - A cosmos database container/collection object
+        __container_id - A cosmos database container/collection id
+        id             - uuid   
+    Methods:    
+        createContainer(container_id, container_path) 
+        readContainer(container_id)
+        replaceContainer(container)
+        deleteContainer(container_id)
+        recreateContainer(container_id, container_path) 
+        replaceThroughputOfContainer(value = 1000)            
+        getContainer(container_id)
+        upsertItem(document)
+        patchItem(id, partialDoc)
+        readItem(itemId) 
+        deleteItem(itemId, partitionKey = None)
+        queryItems(sql = "") 
+        listItems()
+        listItemsJson()
+    """
     def __init__(self, database_id = 'testDatabase'):
         # Create client
         super().__init__()
@@ -124,35 +168,43 @@ class CosmosSQL(CosmosSQLClient):
 
     @property
     def client(self):
+        """Current cosmos client"""
         return self.getClient() 
 
     @property
     def database(self):
+        """Current database"""
         return self.__database 
 
     @database.setter
     def database(self, database_id):
+        """Set a new database """
         self.__database_id = database_id
         self.createDatabaseIfNotExists(database_id)
 
     @property
     def database_id(self):
+        """Database name"""
         return self.__database_id 
 
     @property
     def container(self):
+        """Current container"""
         return self.__container 
     
     @container.setter
     def container(self, container_id, container_path):
+        """Set a new container"""
         self.createContainer(container_id, container_path) 
 
     @property
     def container_id(self):
+        """Current container name"""
         return self.__container_id 
 
     # Create a container    
     def createContainer(self, container_id, container_path = '/id'): 
+        """Create a container if it does not exist"""
         self.__container_id = container_id   
         container_definition = {'id': container_id}
         container_definition['partitionKey'] = {
@@ -168,6 +220,7 @@ class CosmosSQL(CosmosSQLClient):
                 raise e
     
     def readContainer(self, container_id):
+        """Set a new contain and read it"""
         self.__container_id = container_id
         self.__container = self.client.ReadContainer("dbs/" + self.database_id + "/colls/" + container_id)
         return self.__container
@@ -177,6 +230,7 @@ class CosmosSQL(CosmosSQLClient):
         return self.__container
 
     def deleteContainer(self, container_id):
+        """Delete a container"""
         if not container_id:
             container_id = self.container_id
         try:
@@ -184,12 +238,14 @@ class CosmosSQL(CosmosSQLClient):
         except errors.HTTPFailure: # as e:
             print("container_id {0} does not exist".format(container_id))
 
-    def recreateContainer(self, container_id, container_path = '/id'): 
+    def recreateContainer(self, container_id, container_path = '/id'):
+        """Drop a container and re-create it""" 
         self.deleteContainer(container_id)
         self.createContainer(container_id, container_path)
 
     # Replace throughput for a container
-    def replaceThroughputOfContainer(self, value = 1000):            
+    def replaceThroughputOfContainer(self, value = 1000): 
+        """Change the throughput value of the curret container"""           
         # Get the offer for the container
         container = self.container
         offers = list(self.client.QueryOffers("Select * from root r where r.offerResourceId='" + container['_rid'] + "'"))
@@ -208,9 +264,11 @@ class CosmosSQL(CosmosSQLClient):
 
     # Collection operations
     def upsertItem(self, document):
+        """Insert or update a document"""
         return self.client.UpsertItem("dbs/" + self.database_id + "/colls/" + self.container_id, document)
 
     def patchItem(self, id, partialDoc):
+        """Patch a document"""
         if 'id' in partialDoc: 
             del partialDoc['id']
         sql = 'SELECT * FROM ' + self.container_id + " t WHERE t.id = '{0}'".format(id)
@@ -223,19 +281,23 @@ class CosmosSQL(CosmosSQLClient):
             return self.upsertItem(document)
 
     def queryItems(self, sql = ""):
+        """Query documents with the sql"""
         if sql == "":
             sql = 'SELECT * FROM ' + self.container_id   
         return self.client.QueryItems("dbs/" + self.database_id + "/colls/" + self.container_id, sql, {'enableCrossPartitionQuery': True})
 
     def listItems(self):
+        """List all the document"""
         for item in self.queryItems():
             print(item)
 
     def listItemsJson(self):
+        """List all the documents in JSON format"""
         for item in self.queryItems():
             print(json.dumps(item, indent=True))
 
     def readItem(self, itemId):
+        """Read a document per ID"""
         items = self.queryItems({
                                     'query': 'SELECT * FROM root r WHERE r.id=@id',
                                     'parameters': [
@@ -253,6 +315,7 @@ class CosmosSQL(CosmosSQLClient):
         return document
 
     def deleteItem(self, itemId, partitionKey = None):
+        """Delete a document per ID"""
         if not partitionKey:
             partitionKey = itemId
         options = {'enableCrossPartitionQuery': True}
@@ -263,6 +326,7 @@ class CosmosSQL(CosmosSQLClient):
     #Expose id function
     @property
     def id(self):
+        """Expose the id function"""
         return str(uuid.uuid4())
 
 ###################################################################################        
